@@ -38,7 +38,15 @@ export default function Listing() {
         limit: 9
       };
 
-      // Try real API first, fallback to Mock data
+      // directly use Mock data
+      // avoids the "Invalid API response" error
+      const mockResult = getMockItemList(params);
+      setItems(mockResult.items);
+      setPagination(mockResult);
+      setLoading(false);
+      
+      // backend is ready:
+      /*
       try {
         const result = await itemAPI.getItemList(params);
         if (result && (result.items || Array.isArray(result))) {
@@ -58,12 +66,13 @@ export default function Listing() {
         }
       } catch (apiError) {
         console.log('API call failed, using Mock data:', apiError);
-        // Use Mock data as fallback
         const mockResult = getMockItemList(params);
         setItems(mockResult.items);
         setPagination(mockResult);
         setLoading(false);
       }
+      */
+      
     } catch (error) {
       console.error('Failed to fetch item list:', error);
       setError('Failed to load items');
@@ -108,13 +117,35 @@ export default function Listing() {
 
   // Handle pagination
   const handlePageChange = (page) => {
-    updateSearchParams({ page: page.toString() });
+    console.log('Page change requested:', page); // Debug log
+    // avoid double clicking
+    if (page === currentPage) return;
+    
+    // reset loading, page visual effects
+    setLoading(true);
+    
+    // update url
+    const params = new URLSearchParams(searchParams);
+    params.set('page', page.toString());
+    setSearchParams(params);
   };
 
-  // Clear all filters
+  // clear all filters
   const clearFilters = () => {
     setSearchParams({});
   };
+
+  // Debug pagination info
+  console.log('Current pagination state:', {
+    currentPage,
+    pagination,
+    totalItems: items.length,
+    hasNext: pagination?.hasNext,
+    hasPrev: pagination?.hasPrev,
+    totalPages: pagination?.totalPages,
+    total: pagination?.total,
+    currentItemsCount: items.length
+  });
 
   // Show loading state
   if (loading) {
@@ -359,14 +390,33 @@ export default function Listing() {
                       justifyContent: 'center'
                     }}>
                       <img 
-                        src={item.images && item.images[0] ? item.images[0] : 'https://via.placeholder.com/150x150/95A5A6/FFFFFF?text=No+Image'} 
+                        src={item.images && item.images[0] ? item.images[0] : 'https://picsum.photos/150/150?random=999'} 
                         alt={item.title || 'Item'} 
                         style={{ 
                           width: '100%', 
                           height: '100%', 
                           objectFit: 'cover' 
                         }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
                       />
+                      <div style={{ 
+                        display: 'none',
+                        width: '100%', 
+                        height: '100%', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        backgroundColor: '#f8f9fa',
+                        color: '#666',
+                        fontSize: '14px',
+                        textAlign: 'center',
+                        padding: '10px'
+                      }}>
+                        {item.title || 'No Image'}<br/>
+                        <span style={{ fontSize: '12px' }}>Image not available</span>
+                      </div>
                     </div>
                     <div style={{ padding: '15px' }}>
                       <h3 style={{ 
@@ -454,8 +504,12 @@ export default function Listing() {
             </div>
 
             {/* Pagination */}
-            {pagination.totalPages > 1 && (
+            {pagination && pagination.totalPages > 1 && (
               <div style={{ textAlign: 'center', margin: '30px 0' }}>
+                <div style={{ marginBottom: '10px', fontSize: '14px', color: '#666' }}>
+                  Page {pagination.page} of {pagination.totalPages} • Total: {pagination.total} items
+                </div>
+                
                 <button
                   onClick={() => handlePageChange(pagination.page - 1)}
                   disabled={!pagination.hasPrev}
@@ -480,8 +534,8 @@ export default function Listing() {
                       padding: '8px 16px', 
                       margin: '0 5px',
                       border: '1px solid #ddd',
-                      backgroundColor: page === pagination.page ? '#3498db' : 'white',
-                      color: page === pagination.page ? 'white' : '#333',
+                      backgroundColor: page === currentPage ? '#3498db' : 'white',
+                      color: page === currentPage ? 'white' : '#333',
                       cursor: 'pointer',
                       borderRadius: '4px'
                     }}
@@ -510,11 +564,33 @@ export default function Listing() {
 
             {/* Results Info */}
             <div style={{ textAlign: 'center', color: '#666', fontSize: '14px' }}>
-              Found {pagination.total || 0} items
-              {pagination.total > 0 && pagination.totalPages > 1 && (
-                <span> • Page {pagination.page} of {pagination.totalPages}</span>
+              Found {pagination?.total || 0} items
+              {pagination?.total > 0 && pagination?.totalPages > 1 && (
+                <span> • Page {currentPage} of {pagination.totalPages}</span>
               )}
             </div>
+            
+            {/* Debug Info - 开发时显示，生产环境可以隐藏 */}
+            {pagination?.debug && (
+              <div style={{ 
+                marginTop: '20px', 
+                padding: '15px', 
+                backgroundColor: '#f8f9fa', 
+                border: '1px solid #e0e0e0',
+                borderRadius: '4px',
+                fontSize: '12px',
+                color: '#666',
+                textAlign: 'left'
+              }}>
+                <strong>Debug Info:</strong><br/>
+                Requested Page: {pagination.debug.requestedPage}<br/>
+                Valid Page: {pagination.debug.validPage}<br/>
+                Items in Current Page: {pagination.debug.itemsInPage}<br/>
+                Start Index: {pagination.debug.startIndex}<br/>
+                End Index: {pagination.debug.endIndex}<br/>
+                Total Items: {pagination.debug.totalItems}
+              </div>
+            )}
           </div>
         </div>
       </div>

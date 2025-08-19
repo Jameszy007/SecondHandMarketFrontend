@@ -21,19 +21,29 @@ export default function Detail() {
       setLoading(true);
       setError(null);
       
-      // Try real API first, fallback to Mock data
+      // Since backend is not ready, directly use Mock data
+      // This avoids the "Invalid API response" error
+      const itemData = getMockItemById(id);
+      if (itemData) {
+        setItem(itemData);
+        setLoading(false);
+      } else {
+        setError('Item not found');
+        setLoading(false);
+      }
+      
+      // Uncomment this when backend is ready:
+      /*
       try {
         const result = await itemAPI.getItemDetail(id);
         if (result && result.id) {
           setItem(result);
           setLoading(false);
-          return;
         } else {
           throw new Error('Invalid API response');
         }
       } catch (apiError) {
         console.log('API call failed, using Mock data:', apiError);
-        // Use Mock data as fallback
         const itemData = getMockItemById(id);
         if (itemData) {
           setItem(itemData);
@@ -43,6 +53,8 @@ export default function Detail() {
           setLoading(false);
         }
       }
+      */
+      
     } catch (error) {
       console.error('Failed to fetch item details:', error);
       setError('Failed to load item details');
@@ -69,6 +81,12 @@ export default function Detail() {
   const handleLike = async () => {
     if (!item) return;
     
+    // Since backend is not ready, directly toggle local state
+    // This avoids the 404 API error
+    setIsLiked(!isLiked);
+    
+    // Uncomment this when backend is ready:
+    /*
     try {
       if (isLiked) {
         // Unlike item
@@ -82,6 +100,7 @@ export default function Detail() {
       console.error('Like operation failed:', error);
       setIsLiked(!isLiked);
     }
+    */
   };
 
   const handleBackToList = () => {
@@ -149,7 +168,7 @@ export default function Detail() {
   // Safety check for images array
   const images = item.images && Array.isArray(item.images) && item.images.length > 0 
     ? item.images 
-    : ['https://via.placeholder.com/400x300/95A5A6/FFFFFF?text=No+Image'];
+    : ['https://picsum.photos/400/300?random=999'];
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
@@ -194,7 +213,25 @@ export default function Detail() {
                 height: '100%', 
                 objectFit: 'cover' 
               }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
             />
+            <div style={{ 
+              display: 'none',
+              width: '100%', 
+              height: '100%', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              backgroundColor: '#f8f9fa',
+              color: '#666',
+              fontSize: '18px',
+              textAlign: 'center'
+            }}>
+              {item.title}<br/>
+              <span style={{ fontSize: '14px' }}>Image not available</span>
+            </div>
           </div>
           
           {/* Image Thumbnails */}
@@ -214,6 +251,9 @@ export default function Detail() {
                     border: `2px solid ${currentImageIndex === index ? '#3498db' : '#e0e0e0'}`,
                     objectFit: 'cover',
                     backgroundColor: '#f8f9fa'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
                   }}
                 />
               ))}
@@ -437,7 +477,25 @@ export default function Detail() {
                 src={item.seller.avatar} 
                 alt={item.seller.name} 
                 style={{ width: '50px', height: '50px', borderRadius: '50%' }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
               />
+              <div style={{ 
+                display: 'none',
+                width: '50px', 
+                height: '50px', 
+                borderRadius: '50%',
+                backgroundColor: '#3498db',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }}>
+                {item.seller.name ? item.seller.name.charAt(0).toUpperCase() : '?'}
+              </div>
               <div>
                 <h4 style={{ margin: '0 0 8px 0', color: '#333', fontSize: '14px' }}>
                   {item.seller.name || 'Unknown Seller'}
