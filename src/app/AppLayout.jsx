@@ -1,41 +1,52 @@
-import React, { useContext } from 'react';
-import { Layout, Menu, Dropdown, Button } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
-import { Outlet } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { Link, Outlet } from "react-router-dom";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-const { Header, Content } = Layout;
-
-const AppLayout = () => {
-  const { authed, handleLogOut } = useContext(AuthContext);
-
-  const userMenu = (
-    <Menu>
-      <Menu.Item key="logout" onClick={handleLogOut}>
-        Log Out
-      </Menu.Item>
-    </Menu>
-  );
-
+export default function AppLayout() {
   return (
-    <Layout style={{ height: '100vh' }}>
-      <Header style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <div style={{ fontSize: 16, fontWeight: 600, color: 'white' }}>
-          Second Hand Market
-        </div>
-        {authed && (
-          <div>
-            <Dropdown trigger="click" overlay={userMenu}>
-              <Button icon={<UserOutlined />} shape="circle" />
-            </Dropdown>
+    <div>
+      <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div className="container-fluid">
+          <Link className="navbar-brand" to="/">
+            SecondHandMarket
+          </Link>
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNav"
+            aria-controls="navbarNav"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
+          <div className="collapse navbar-collapse" id="navbarNav">
+            <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+              <li className="nav-item">
+                <Link className="nav-link" to="/items">
+                  Listing
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/profile">
+                  Profile
+                </Link>
+              </li>
+            </ul>
+            <ul className="navbar-nav">
+              <li className="nav-item">
+                <Link className="nav-link" to="/login">
+                  Login
+                </Link>
+              </li>
+            </ul>
           </div>
-        )}
-      </Header>
-      <Content style={{ height: 'calc(100% - 64px)', margin: 20, overflow: 'auto' }}>
-        <Outlet />
-      </Content>
-    </Layout>
-  );
-};
+        </div>
+      </nav>
 
-export default AppLayout;
+      <div className="container mt-4">
+        <Outlet />
+      </div>
+    </div>
+  );
+}
