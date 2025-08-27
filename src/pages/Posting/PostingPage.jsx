@@ -1,29 +1,32 @@
 import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Button,
-  Card,
-  CardContent,
-  Input,
-  Textarea,
-  Checkbox,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "antd";
+} from "@/components/ui/select";
 
 export default function PostingPage() {
   const [formData, setFormData] = useState({
     itemName: "",
     description: "",
     category: "",
+    condition: "",
     price: "",
+    originalPrice: "",
     photos: [],
     pickupLocation: "",
     deliveryMethods: [],
-    email: "default@email.com", // pre-filled from profile
-    phone: "123-456-7890", // pre-filled from profile
+    email: "default@email.com", // from profile
+    phone: "123-456-7890", // from profile
+    tags: [],
+    newTag: "",
   });
 
   const handleFileChange = (e) => {
@@ -43,6 +46,23 @@ export default function PostingPage() {
     });
   };
 
+  const handleAddTag = () => {
+    if (formData.newTag.trim() !== "") {
+      setFormData((prev) => ({
+        ...prev,
+        tags: [...prev.tags, prev.newTag.trim()],
+        newTag: "",
+      }));
+    }
+  };
+
+  const handleRemoveTag = (tag) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((t) => t !== tag),
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("Submitted Data:", formData);
@@ -58,7 +78,7 @@ export default function PostingPage() {
             onSubmit={handleSubmit}
             className="grid grid-cols-1 md:grid-cols-2 gap-6"
           >
-            {/* Left side */}
+            {/* Left column */}
             <div className="space-y-4">
               <Input
                 placeholder="Item name"
@@ -74,6 +94,7 @@ export default function PostingPage() {
                   setFormData({ ...formData, description: e.target.value })
                 }
               />
+
               <Select
                 onValueChange={(value) =>
                   setFormData({ ...formData, category: value })
@@ -89,6 +110,24 @@ export default function PostingPage() {
                   <SelectItem value="books">Books</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Condition */}
+              <Select
+                onValueChange={(value) =>
+                  setFormData({ ...formData, condition: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select condition" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="like-new">Like New</SelectItem>
+                  <SelectItem value="used">Used</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Prices */}
               <Input
                 type="number"
                 placeholder="Price (USD)"
@@ -98,6 +137,16 @@ export default function PostingPage() {
                 }
               />
               <Input
+                type="number"
+                placeholder="Original Price (USD)"
+                value={formData.originalPrice}
+                onChange={(e) =>
+                  setFormData({ ...formData, originalPrice: e.target.value })
+                }
+              />
+
+              {/* Photos */}
+              <Input
                 type="file"
                 accept="image/*"
                 multiple
@@ -106,8 +155,9 @@ export default function PostingPage() {
               <p className="text-xs text-gray-500">Max 6 photos allowed</p>
             </div>
 
-            {/* Right side */}
+            {/* Right column */}
             <div className="space-y-4">
+              {/* Location */}
               <Select
                 onValueChange={(value) =>
                   setFormData({ ...formData, pickupLocation: value })
@@ -117,16 +167,15 @@ export default function PostingPage() {
                   <SelectValue placeholder="Pickup location" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="location1">Location 1</SelectItem>
-                  <SelectItem value="location2">Location 2</SelectItem>
-                  <SelectItem value="location3">Location 3</SelectItem>
+                  <SelectItem value="newyork">New York</SelectItem>
+                  <SelectItem value="losangeles">Los Angeles</SelectItem>
+                  <SelectItem value="chicago">Chicago</SelectItem>
                 </SelectContent>
               </Select>
 
+              {/* Delivery Method */}
               <div>
-                <label className="block mb-2 font-medium">
-                  Delivery Method
-                </label>
+                <label className="block mb-2 font-medium">Delivery Method</label>
                 <div className="flex space-x-4">
                   <label className="flex items-center space-x-2">
                     <Checkbox
@@ -145,6 +194,7 @@ export default function PostingPage() {
                 </div>
               </div>
 
+              {/* Contact */}
               <Input
                 type="email"
                 placeholder="Default email from profile"
@@ -157,6 +207,44 @@ export default function PostingPage() {
                 value={formData.phone}
                 readOnly
               />
+
+              {/* Tags */}
+              <div>
+                <label className="block mb-2 font-medium">Tags</label>
+                <div className="flex space-x-2 mb-2">
+                  <Input
+                    placeholder="Add a tag"
+                    value={formData.newTag}
+                    onChange={(e) =>
+                      setFormData({ ...formData, newTag: e.target.value })
+                    }
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleAddTag}
+                    className="rounded-lg"
+                  >
+                    Add
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm flex items-center space-x-2"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="ml-2 text-red-500"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Submit */}
