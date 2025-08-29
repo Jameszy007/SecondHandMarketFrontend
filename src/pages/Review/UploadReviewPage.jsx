@@ -1,48 +1,65 @@
 import React, { useState, useRef } from "react";
-import { Form, Input, Button, Rate, message } from "antd";
-import reviewAPI from "../../service/api.js";
+import { Form, Input, Button, Rate, message, Card, Typography, Upload } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+import { useAuth } from "../../hooks/useAuth";
+import { addReview } from "../../utils/reviewsStorage";
+import { useNavigate, useLocation } from "react-router-dom";
+
+const { Title } = Typography;
 
 export default function UploadReview() {
   const [loading, setLoading] = useState(false);
-  const fileInputRef = useRef();
+  const [fileList, setFileList] = useState([]);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get item information from navigation state
+  const itemInfo = location.state;
 
   const handleSubmit = async (values) => {
-    const formData = new FormData();
-    const { files } = fileInputRef.current;
-
-    if (!files || files.length === 0) {
-      message.error("Please upload at least one picture.");
+    if (!user) {
+      message.error("Please log in to submit a review");
+      navigate("/login");
       return;
     }
-
-    if (files.length > 5) {
-      message.error("You can at most upload 5 pictures.");
-      return;
-    }
-
-    for (let i = 0; i < files.length; i++) {
-      formData.append("images", files[i]);
-    }
-
-    formData.append("rating", values.rating);
-    formData.append("review", values.review);
 
     setLoading(true);
     try {
-      await reviewAPI.uploadReview(formData);
-      message.success("Review uploaded successfully!");
+      const reviewData = {
+        userId: user.id,
+        username: user.username,
+        rating: values.rating,
+        review: values.review,
+        itemId: itemInfo?.itemId || null,
+        itemTitle: itemInfo?.itemTitle || "General Review",
+        images: fileList.map(file => file.url || file.thumbUrl || file.name)
+      };
+
+      addReview(reviewData);
+      message.success("Review submitted successfully!");
+      setTimeout(() => {
+        navigate("/reviews");
+      }, 1000);
     } catch (error) {
       console.error(error);
-      message.error("Failed to upload review");
+      message.error("Failed to submit review");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container vh-100 d-flex justify-content-center align-items-center">
-      <div className="card p-4" style={{ width: "500px" }}>
-        <h2 className="text-center mb-4">Upload Your Review</h2>
+    <div style={{ maxWidth: "600px", margin: "50px auto", padding: "0 20px" }}>
+      <Card>
+        <Title level={2} style={{ textAlign: "center", marginBottom: "30px" }}>
+          Submit Your Review
+          {itemInfo?.itemTitle && (
+            <div style={{ fontSize: "16px", color: "#666", marginTop: "8px" }}>
+              for "{itemInfo.itemTitle}"
+            </div>
+          )}
+        </Title>
 
         <Form
           layout="vertical"
@@ -62,38 +79,51 @@ export default function UploadReview() {
             label="Review"
             rules={[{ required: true, message: "Please write your review" }]}
           >
-            <Input.TextArea rows={4} placeholder="Write your review here..." />
+            <Input.TextArea 
+              rows={4} 
+              placeholder="Write your review here..." 
+              maxLength={500}
+              showCount
+            />
           </Form.Item>
 
           <Form.Item
             name="pictures"
-            label="Upload Pictures"
-            rules={[
-              { required: true, message: "Please upload at least one picture" },
-            ]}
+            label="Upload Pictures (Optional)"
           >
-            <input
-              type="file"
-              accept="image/png, image/jpeg"
-              ref={fileInputRef}
-              multiple
-              className="form-control"
-            />
-            <small className="text-muted">You can upload up to 5 images.</small>
+            <Upload
+              listType="picture-card"
+              fileList={fileList}
+              onChange={({ fileList }) => setFileList(fileList)}
+              beforeUpload={() => false}
+              maxCount={5}
+              accept="image/*"
+            >
+              {fileList.length < 5 && (
+                <div>
+                  <UploadOutlined />
+                  <div style={{ marginTop: 8 }}>Upload</div>
+                </div>
+              )}
+            </Upload>
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+              You can upload up to 5 images (optional)
+            </div>
           </Form.Item>
 
           <Form.Item>
             <Button
               type="primary"
               htmlType="submit"
-              className="w-100"
+              size="large"
               loading={loading}
+              style={{ width: "100%" }}
             >
               Submit Review
             </Button>
           </Form.Item>
         </Form>
-      </div>
+      </Card>
     </div>
   );
 }

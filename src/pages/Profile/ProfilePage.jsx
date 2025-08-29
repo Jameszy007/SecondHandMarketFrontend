@@ -3,17 +3,21 @@ import { useParams, useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import ReviewPage from "../../pages/Review/ReviewPage";
 import TransactionPage from "../Transaction/TransactionPage";
+import UserPosts from "../../components/UserPosts";
+import UserFavorites from "../../components/UserFavorites";
+import { useAuth } from "../../hooks/useAuth";
 
 export default function Profile() {
   const { tab } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(tab || "favorites");
 
   useEffect(() => {
     if (tab) {
       setActiveTab(tab);
     } else {
-      navigate("/profile/favorites");
+      navigate("/profile/posts");
     }
   }, [tab, navigate]);
 
@@ -22,9 +26,10 @@ export default function Profile() {
     navigate(`/profile/${tabName}`);
   };
 
-  const name = "name placeholder";
-  const location = "location placeholder";
-  const pfpUrl = "";
+  // Use actual user data or fallback to placeholders
+  const name = user?.username || "name placeholder";
+  const location = user?.location || "location placeholder";
+  const pfpUrl = user?.avatar || "";
 
   return (
     <div className="container h-100 d-flex justify-content-center align-items-center">
@@ -42,6 +47,17 @@ export default function Profile() {
         </div>
         <hr />
         <ul className="nav nav-tabs">
+          <li className="nav-item">
+            <a
+              className={`nav-link ${
+                activeTab === "posts" ? "active" : ""
+              }`}
+              href="#"
+              onClick={() => handleTabClick("posts")}
+            >
+              Posts
+            </a>
+          </li>
           <li className="nav-item">
             <a
               className={`nav-link ${
@@ -77,11 +93,17 @@ export default function Profile() {
         <div className="tab-content p-4">
           <div
             className={`tab-pane ${
+              activeTab === "posts" ? "active show" : ""
+            }`}
+          >
+            <UserPosts />
+          </div>
+          <div
+            className={`tab-pane ${
               activeTab === "favorites" ? "active show" : ""
             }`}
           >
-            <h4>Favorites</h4>
-            <p>Your favorite items will be displayed here.</p>
+            <UserFavorites />
           </div>
           <div
             className={`tab-pane ${

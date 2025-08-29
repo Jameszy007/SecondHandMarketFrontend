@@ -18,21 +18,17 @@ import { useNavigate } from "react-router-dom";
 import {
   HeartOutlined,
   ShoppingCartOutlined,
-  PlusOutlined,
 } from "@ant-design/icons";
 import ItemCard from "../../components/ItemCard";
 import ReviewRow from "../../components/ReviewRow";
 import { CATEGORIES, SKELETON_ITEM_COUNT } from "../../utils/constants";
-import { dummyReviews, mockItems } from "../../utils/mockData";
+import { dummyReviews, mockItems, getMockItemList } from "../../utils/mockData";
+import { useAuth } from "../../hooks/useAuth";
 
 const { Title } = Typography;
 const { Search } = Input;
 const item = mockItems;
 const mockReviews = dummyReviews;
-
-function useAuthed() {
-  return Boolean(localStorage.getItem("token"));
-}
 
 export default function HomePage() {
   console.log("HomePage component rendering");
@@ -40,7 +36,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [reviews, setReviews] = useState([]);
-  const authed = useAuthed();
+  const { isAuthenticated } = useAuth();
 
   // 拉最新商品 + 部分评价
   useEffect(() => {
@@ -50,7 +46,10 @@ export default function HomePage() {
         setLoading(true);
 
         if (!mounted) return;
-        setItems(mockItems);
+        
+        // Get latest items including user posts
+        const latestItems = getMockItemList({ limit: 8, sort: "date-desc" });
+        setItems(latestItems.items);
         setReviews(mockReviews);
       } catch (e) {
         console.error("Error loading data:", e);
@@ -77,11 +76,14 @@ export default function HomePage() {
     nav(`/items?category=${key}`);
   };
 
-  // F/C/S 按钮（放在搜索条右边）
+  // F/C 按钮（放在搜索条右边）
   const ActionButtons = useMemo(() => {
     const authNav = (to) => {
-      if (authed) nav(to);
-      else nav("/login", { state: { from: "/" } });
+      if (isAuthenticated) {
+        nav(to);
+      } else {
+        nav("/login", { state: { from: to } });
+      }
     };
     return (
       <Space>
@@ -89,7 +91,7 @@ export default function HomePage() {
           <Button
             shape="circle"
             icon={<HeartOutlined />}
-            onClick={() => authNav("/favorites")}
+            onClick={() => authNav("/profile/favorites")}
           />
         </Tooltip>
         <Tooltip title="Cart">
@@ -101,17 +103,9 @@ export default function HomePage() {
             />
           </Badge>
         </Tooltip>
-        <Tooltip title="Post Item">
-          <Button
-            type="primary"
-            shape="circle"
-            icon={<PlusOutlined />}
-            onClick={() => authNav("/posting")}
-          />
-        </Tooltip>
       </Space>
     );
-  }, [authed, nav]);
+  }, [isAuthenticated, nav]);
 
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 16px" }}>
@@ -119,12 +113,12 @@ export default function HomePage() {
       <Row style={{ marginBottom: 12 }}>
         <Col span={24}>
           <Title level={4} style={{ margin: 0 }}>
-            Welcome to XXX Second Hand Market
+            Welcome to LaiCai Second Hand Market
           </Title>
         </Col>
       </Row>
 
-      {/* 搜索区 + F/C/S */}
+      {/* 搜索区 + F/C */}
       <Card style={{ marginBottom: 12 }}>
         <Row gutter={[12, 12]} align="middle">
           <Col xs={24} md={18}>

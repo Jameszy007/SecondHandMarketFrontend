@@ -1,29 +1,124 @@
 import http from "./http.js";
 
+// Mock user database for testing
+const mockUsers = [
+  {
+    id: 1,
+    username: "testuser",
+    email: "test@example.com",
+    password: "password123",
+    token: "mock-jwt-token-123"
+  },
+  {
+    id: 2,
+    username: "demo",
+    email: "demo@example.com", 
+    password: "demo123",
+    token: "mock-jwt-token-456"
+  }
+];
+
+// Mock authentication functions
 const register = (username, email, password) => {
-  return http.post("/api/auth/register", {
-    username,
-    email,
-    password,
+  return new Promise((resolve, reject) => {
+    // Simulate API delay
+    setTimeout(() => {
+      // Load existing users from localStorage or use default
+      let users = [...mockUsers];
+      try {
+        const storedUsers = localStorage.getItem("mockUsers");
+        if (storedUsers) {
+          users = JSON.parse(storedUsers);
+        }
+      } catch (error) {
+        console.log("Error loading stored users, using default:", error);
+        users = [...mockUsers];
+      }
+
+      // Check if user already exists
+      const existingUser = users.find(user => user.email === email);
+      if (existingUser) {
+        reject({ message: "User already exists with this email" });
+        return;
+      }
+
+      // Create new user
+      const newUser = {
+        id: users.length + 1,
+        username,
+        email,
+        password,
+        token: `mock-jwt-token-${Date.now()}`
+      };
+      
+      users.push(newUser);
+      
+      // Store user data in localStorage for persistence
+      localStorage.setItem("mockUsers", JSON.stringify(users));
+      
+      console.log("Registration successful for:", newUser.email);
+      console.log("Total users:", users.length);
+      
+      resolve({ 
+        message: "Registration successful",
+        user: { id: newUser.id, username: newUser.username, email: newUser.email }
+      });
+    }, 1000); // Simulate network delay
   });
 };
 
 const login = (email, password) => {
-  return http
-    .post("/api/auth/login", {
-      email,
-      password,
-    })
-    .then((response) => {
-      if (response.data.accessToken) {
-        localStorage.setItem("user", JSON.stringify(response.data));
+  return new Promise((resolve, reject) => {
+    // Simulate API delay
+    setTimeout(() => {
+      // Load users from localStorage if available, otherwise use default mockUsers
+      let users = mockUsers;
+      try {
+        const storedUsers = localStorage.getItem("mockUsers");
+        if (storedUsers) {
+          users = JSON.parse(storedUsers);
+        }
+      } catch (error) {
+        console.log("Error loading stored users, using default:", error);
+        users = mockUsers;
       }
-      return response.data;
-    });
+      
+      // Find user
+      const user = users.find(u => u.email === email && u.password === password);
+      
+      if (!user) {
+        reject({ message: "Invalid email or password" });
+        return;
+      }
+
+      // Store token in localStorage
+      localStorage.setItem("token", user.token);
+      localStorage.setItem("user", JSON.stringify({
+        id: user.id,
+        username: user.username,
+        email: user.email
+      }));
+
+      console.log("Login successful for:", user.email);
+      console.log("Token stored:", user.token);
+
+      // Dispatch custom event to notify components of auth change
+      window.dispatchEvent(new Event('authChanged'));
+
+      resolve({
+        message: "Login successful",
+        accessToken: user.token,
+        user: { id: user.id, username: user.username, email: user.email }
+      });
+    }, 1000); // Simulate network delay
+  });
 };
 
 const logout = () => {
+  localStorage.removeItem("token");
   localStorage.removeItem("user");
+  // Dispatch custom event to notify components of auth change
+  window.dispatchEvent(new Event('authChanged'));
 };
 
 export const authService = {

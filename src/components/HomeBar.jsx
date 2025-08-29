@@ -4,18 +4,28 @@ import {
   UserOutlined,
   LogoutOutlined,
   SettingOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 const { Header } = Layout;
 
-export default function HomeBar({ appName = "Second Hand Market" }) {
+export default function HomeBar({ appName = "LaiCai Second Hand Market" }) {
   const navigate = useNavigate();
-  const isAuthenticated = Boolean(localStorage.getItem("token"));
+  const { isAuthenticated, logout } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    logout();
     navigate("/login");
+  };
+
+  const handleCreatePost = () => {
+    if (isAuthenticated) {
+      navigate("/posting");
+    } else {
+      navigate("/login", { state: { from: "/posting" } });
+    }
   };
 
   const userMenuItems = [
@@ -70,6 +80,14 @@ export default function HomeBar({ appName = "Second Hand Market" }) {
       </div>
 
       <Space>
+        <Button 
+          type="primary" 
+          icon={<PlusOutlined />}
+          onClick={handleCreatePost}
+        >
+          Create Post
+        </Button>
+        
         {isAuthenticated ? (
           <Dropdown
             menu={{ items: userMenuItems }}

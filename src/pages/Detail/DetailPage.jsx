@@ -2,19 +2,33 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { itemAPI } from "../../service/api";
 import { getMockItemById } from "../../utils/mockData";
+import { message } from "antd";
+import { ShoppingCartOutlined } from "@ant-design/icons";
+import { addToCart, canAddToCart, getAvailableStock } from "../../components/CartStorage";
+import { useAuth } from "../../hooks/useAuth";
+import { addToFavorites, isInFavorites } from "../../utils/favoritesStorage";
 
 export default function DetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [messageApi, contextHolder] = message.useMessage();
 
   useEffect(() => {
     fetchItemDetail();
   }, [id]);
+
+  // Check if item is in favorites when item loads
+  useEffect(() => {
+    if (item) {
+      setIsLiked(isInFavorites(item.id));
+    }
+  }, [item]);
 
   const fetchItemDetail = async () => {
     try {
@@ -69,37 +83,59 @@ export default function DetailPage() {
 
   const handleContactSeller = () => {
     // Add contact seller logic here
-    alert("Contact seller feature to be implemented");
+    if (!item || !item.seller) {
+      return;
+    }
+  
+    const seller = {
+      id: String(item.seller.id),
+      name: item.seller.name || "Seller",
+      avatar:
+        item.seller.avatar ||
+        `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(
+          item.seller.name || String(item.seller.id)
+        )}`,
+    };
+    const product = { id: String(item.id), title: item.title };
+    navigate("/chat", { state: { seller, product } });
   };
 
   const handleBuyNow = () => {
     // Add buy now logic here
-    alert("Buy now feature to be implemented");
+    if (!item) return;
+    
+    try {
+      addToCart(item, 1);
+      messageApi.success({ content: "已加入购物车", duration: 1.6 });
+    } catch (error) {
+      messageApi.error(error.message);
+    }
   };
 
   const handleLike = async () => {
     if (!item) return;
 
-    // Since backend is not ready, directly toggle local state
-    // This avoids the 404 API error
-    setIsLiked(!isLiked);
-
-    // Uncomment this when backend is ready:
-    /*
-    try {
-      if (isLiked) {
-        // Unlike item
-        await itemAPI.unlikeItem(id);
-      } else {
-        // Like item
-        await itemAPI.likeItem(id);
-      }
-      setIsLiked(!isLiked);
-    } catch (error) {
-      console.error('Like operation failed:', error);
-      setIsLiked(!isLiked);
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      messageApi.info("Please log in to add items to favorites");
+      navigate("/login", { state: { from: `/items/${id}` } });
+      return;
     }
-    */
+
+    // Add/remove from favorites using localStorage
+    try {
+      const updatedFavorites = addToFavorites(item);
+      setIsLiked(!isLiked);
+      
+      if (isLiked) {
+        messageApi.success("Removed from favorites");
+      } else {
+        messageApi.success("Added to favorites");
+      }
+    } catch (error) {
+      console.error('Favorite operation failed:', error);
+      messageApi.error("Failed to update favorites");
+    }
   };
 
   const handleBackToList = () => {
@@ -176,6 +212,7 @@ export default function DetailPage() {
 
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
+      {contextHolder}
       <button
         onClick={handleBackToList}
         style={{
@@ -372,6 +409,39 @@ export default function DetailPage() {
                 >
                   ${item.originalPrice}
                 </span>
+              )}
+            </div>
+          </div>
+
+          {/* Stock Quantity */}
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontWeight: "bold",
+                color: "#666",
+                marginBottom: "5px",
+                fontSize: "14px",
+              }}
+            >
+              Stock Quantity 📦
+            </label>
+            <div
+              style={{
+                padding: "12px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                backgroundColor: "#f8f9fa",
+                fontSize: "18px",
+                fontWeight: "bold",
+                color: item.stockQuantity > 0 ? "#27ae60" : "#e74c3c",
+              }}
+            >
+              {item.stockQuantity > 0 ? `${item.stockQuantity} in stock` : "Out of stock"}
+              {item.stockQuantity > 0 && (
+                <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                  Available to add: {getAvailableStock(item)} items
+                </div>
               )}
             </div>
           </div>
@@ -604,20 +674,40 @@ export default function DetailPage() {
             justifyContent: "center",
           }}
         >
+                      <button
+              onClick={handleLike}
+              style={{
+                padding: "15px 24px",
+                backgroundColor: isLiked ? "#e74c3c" : "#f39c12",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "16px",
+                fontWeight: "bold",
+                opacity: isAuthenticated ? 1 : 0.7,
+              }}
+              title={isAuthenticated ? "Add to favorites" : "Login to add to favorites"}
+            >
+            {isLiked ? "❤️ Favorited" : "🤍 Favorite"}
+          </button>
+
           <button
-            onClick={handleLike}
+            onClick={handleBuyNow}
+            disabled={!canAddToCart(item, 1)}
             style={{
               padding: "15px 24px",
-              backgroundColor: isLiked ? "#e74c3c" : "#f39c12",
+              backgroundColor: canAddToCart(item, 1) ? "#5243c1" : "#ccc",
               color: "white",
               border: "none",
               borderRadius: "4px",
-              cursor: "pointer",
+              cursor: canAddToCart(item, 1) ? "pointer" : "not-allowed",
               fontSize: "16px",
               fontWeight: "bold",
             }}
+            title={canAddToCart(item, 1) ? "Add to cart" : `Only ${getAvailableStock(item)} available`}
           >
-            {isLiked ? "❤️ Favorited" : "🤍 Favorite"}
+            {canAddToCart(item, 1) ? "Add to cart" : `Out of stock (${getAvailableStock(item)} available)`}
           </button>
 
           <button

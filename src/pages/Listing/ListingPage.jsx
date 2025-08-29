@@ -4,9 +4,17 @@ import { itemAPI } from "../../service/api";
 import { getMockItemList, categories } from "../../utils/mockData";
 import ItemCard from "../../components/ItemCard";
 import Pagination from "../../components/Pagination";
+import { Input, Button, Space, Card, Row, Col, Tooltip, Badge } from "antd";
+import { HeartOutlined, ShoppingCartOutlined, PlusOutlined } from "@ant-design/icons";
+import { useAuth } from "../../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+
+const { Search } = Input;
 
 export default function Listing() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,7 +23,7 @@ export default function Listing() {
   // Get query parameters from URL
   const currentPage = parseInt(searchParams.get("page")) || 1;
   const currentCategory = searchParams.get("category") || "All";
-  const currentSearch = searchParams.get("search") || "";
+  const currentSearch = searchParams.get("search") || searchParams.get("keyword") || "";
   const currentSort = searchParams.get("sort") || "date-desc";
   const currentMinPrice = searchParams.get("minPrice") || "";
   const currentMaxPrice = searchParams.get("maxPrice") || "";
@@ -108,9 +116,43 @@ export default function Listing() {
     updateSearchParams({ category });
   };
 
-  // Handle search
-  const handleSearch = (searchTerm) => {
-    updateSearchParams({ search: searchTerm });
+  // Handle search - Same as HomePage
+  const handleSearch = (kw) => {
+    const keyword = (kw || "").trim();
+    if (!keyword) return;
+    updateSearchParams({ keyword });
+  };
+
+  // Action buttons for authenticated users
+  const ActionButtons = () => {
+    const authNav = (to) => {
+      if (isAuthenticated) {
+        navigate(to);
+      } else {
+        navigate("/login", { state: { from: to } });
+      }
+    };
+
+    return (
+      <Space>
+        <Tooltip title="Favorites">
+          <Button
+            shape="circle"
+            icon={<HeartOutlined />}
+            onClick={() => authNav("/profile/favorites")}
+          />
+        </Tooltip>
+        <Tooltip title="Cart">
+          <Badge count={0} size="small">
+            <Button
+              shape="circle"
+              icon={<ShoppingCartOutlined />}
+              onClick={() => authNav("/cart")}
+            />
+          </Badge>
+        </Tooltip>
+      </Space>
+    );
   };
 
   // Handle sort
@@ -125,7 +167,6 @@ export default function Listing() {
 
   // Handle pagination
   const handlePageChange = (page) => {
-    console.log("Page change requested:", page); // Debug log
     // avoid double clicking
     if (page === currentPage) return;
 
@@ -143,17 +184,7 @@ export default function Listing() {
     setSearchParams({});
   };
 
-  // Debug pagination info
-  console.log("Current pagination state:", {
-    currentPage,
-    pagination,
-    totalItems: items.length,
-    hasNext: pagination?.hasNext,
-    hasPrev: pagination?.hasPrev,
-    totalPages: pagination?.totalPages,
-    total: pagination?.total,
-    currentItemsCount: items.length,
-  });
+
 
   // Show loading state
   if (loading) {
@@ -194,71 +225,27 @@ export default function Listing() {
   }
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
-      {/* Top Section - Search Bar and User Profile */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "30px",
-          padding: "20px",
-          backgroundColor: "#f8f9fa",
-          borderRadius: "8px",
-          border: "1px solid #e0e0e0",
-        }}
-      >
-        {/* Search Bar */}
-        <div style={{ flex: 1, maxWidth: "500px" }}>
-          <div style={{ position: "relative" }}>
-            <input
-              type="text"
-              placeholder="Search Item Name"
-              value={currentSearch}
-              onChange={(e) => handleSearch(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "12px 40px 12px 15px",
-                border: "1px solid #ddd",
-                borderRadius: "25px",
-                fontSize: "16px",
-                outline: "none",
-              }}
+    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 16px" }}>
+      {/* Search Bar and Action Buttons - Same as HomePage */}
+      <Card style={{ marginBottom: "12px" }}>
+        <Row gutter={[12, 12]} align="middle">
+          <Col xs={24} md={18}>
+            <Search
+              placeholder="Search"
+              allowClear
+              enterButton
+              onSearch={handleSearch}
             />
-            <span
-              style={{
-                position: "absolute",
-                right: "15px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                fontSize: "18px",
-                color: "#666",
-              }}
-            >
-              🔍
-            </span>
-          </div>
-        </div>
-
-        {/* User Profile/Avatar */}
-        <div
-          style={{
-            width: "50px",
-            height: "50px",
-            borderRadius: "50%",
-            backgroundColor: "#3498db",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "white",
-            fontSize: "18px",
-            fontWeight: "bold",
-            marginLeft: "20px",
-          }}
-        >
-          👤
-        </div>
-      </div>
+          </Col>
+          <Col
+            xs={24}
+            md={6}
+            style={{ display: "flex", justifyContent: "flex-end" }}
+          >
+            <ActionButtons />
+          </Col>
+        </Row>
+      </Card>
 
       {/* Main Container - Listing */}
       <div
@@ -467,35 +454,6 @@ export default function Listing() {
               handlePageChange={handlePageChange}
               currentPage={currentPage}
             />
-            {/* Debug Info - 开发时显示，生产环境可以隐藏 */}
-            {pagination?.debug && (
-              <div
-                style={{
-                  marginTop: "20px",
-                  padding: "15px",
-                  backgroundColor: "#f8f9fa",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  color: "#666",
-                  textAlign: "left",
-                }}
-              >
-                <strong>Debug Info:</strong>
-                <br />
-                Requested Page: {pagination.debug.requestedPage}
-                <br />
-                Valid Page: {pagination.debug.validPage}
-                <br />
-                Items in Current Page: {pagination.debug.itemsInPage}
-                <br />
-                Start Index: {pagination.debug.startIndex}
-                <br />
-                End Index: {pagination.debug.endIndex}
-                <br />
-                Total Items: {pagination.debug.totalItems}
-              </div>
-            )}
           </div>
         </div>
       </div>

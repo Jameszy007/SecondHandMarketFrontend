@@ -8,6 +8,7 @@ export const mockItems = [
       "Brand new, unopened, 256GB, Space Black, Original Price $999, Current Price $799. Perfect condition, never used, comes with original box and accessories.",
     price: 799,
     originalPrice: 999,
+    stockQuantity: 3,
     category: "Electronics",
     condition: "New",
     images: [
@@ -35,6 +36,7 @@ export const mockItems = [
       "2023 MacBook Air with M2 chip, 8GB RAM, 256GB SSD, slight usage marks but excellent performance. Great for work and study.",
     price: 650,
     originalPrice: 799,
+    stockQuantity: 1,
     category: "Electronics",
     condition: "Like New",
     images: [
@@ -62,6 +64,7 @@ export const mockItems = [
       "Premium noise-canceling headphones, excellent sound quality, long battery life, minor wear but fully functional. Perfect for music lovers.",
     price: 180,
     originalPrice: 249,
+    stockQuantity: 2,
     category: "Electronics",
     condition: "Good",
     images: [
@@ -88,6 +91,7 @@ export const mockItems = [
       "Latest flagship Android phone, 512GB storage, excellent condition, comes with original charger and case. Perfect for Android enthusiasts.",
     price: 850,
     originalPrice: 1199,
+    stockQuantity: 2,
     category: "Electronics",
     condition: "Like New",
     images: [
@@ -142,6 +146,7 @@ export const mockItems = [
       "Classic AJ1 High OG, Chicago colorway, size 10, brand new authentic. Perfect for sneaker collectors and basketball fans.",
     price: 120,
     originalPrice: 149,
+    stockQuantity: 5,
     category: "Shoes",
     condition: "New",
     images: [
@@ -275,6 +280,7 @@ export const mockItems = [
       "3-seater modern sofa, gray fabric, excellent condition, barely used. Perfect for living room or office.",
     price: 450,
     originalPrice: 899,
+    stockQuantity: 0,
     category: "Furniture",
     condition: "Like New",
     images: [
@@ -831,12 +837,85 @@ export const getDummyUserById = (id) => {
 
 // Get item by ID
 export const getMockItemById = (id) => {
-  return mockItems.find((item) => item.id === parseInt(id));
+  // First check in mock items
+  const mockItem = mockItems.find((item) => item.id === parseInt(id));
+  if (mockItem) {
+    return mockItem;
+  }
+
+  // Then check in user posts
+  try {
+    const posts = localStorage.getItem("user_posts");
+    if (posts) {
+      const userPosts = JSON.parse(posts);
+      const userPost = userPosts.find((post) => post.id === parseInt(id));
+      if (userPost) {
+                 // Convert post to item format
+         return {
+           id: userPost.id,
+           title: userPost.title,
+           description: userPost.description,
+           price: userPost.price,
+           originalPrice: userPost.originalPrice,
+           stockQuantity: userPost.stockQuantity || 1,
+           category: userPost.category,
+           condition: userPost.condition,
+           images: userPost.photos && userPost.photos.length > 0 
+             ? userPost.photos.map(photo => photo.url || photo.thumbUrl || "https://placehold.co/400x300")
+             : ["https://placehold.co/400x300"],
+           seller: userPost.seller,
+           location: userPost.location,
+           createdAt: userPost.createdAt,
+           tags: userPost.tags || [],
+           views: userPost.views || 0,
+           likes: userPost.likes || 0,
+         };
+      }
+    }
+  } catch (error) {
+    console.error("Error loading user posts:", error);
+  }
+
+  return null;
 };
 
 // Get item list with filtering, sorting, and pagination
 export const getMockItemList = (params = {}) => {
-  let filteredItems = [...mockItems];
+  // Load user posts from localStorage
+  const loadPosts = () => {
+    try {
+      const posts = localStorage.getItem("user_posts");
+      return posts ? JSON.parse(posts) : [];
+    } catch (error) {
+      console.error("Error loading posts:", error);
+      return [];
+    }
+  };
+
+     // Convert user posts to item format
+   const convertPostToItem = (post) => ({
+     id: post.id,
+     title: post.title,
+     description: post.description,
+     price: post.price,
+     originalPrice: post.originalPrice,
+     stockQuantity: post.stockQuantity || 1,
+     category: post.category,
+     condition: post.condition,
+     images: post.photos && post.photos.length > 0 
+       ? post.photos.map(photo => photo.url || photo.thumbUrl || "https://placehold.co/400x300")
+       : ["https://placehold.co/400x300"],
+     seller: post.seller,
+     location: post.location,
+     createdAt: post.createdAt,
+     tags: post.tags || [],
+     views: post.views || 0,
+     likes: post.likes || 0,
+   });
+
+  // Combine mock items with user posts
+  const userPosts = loadPosts().map(convertPostToItem);
+  let filteredItems = [...mockItems, ...userPosts];
 
   // Category filter
   if (params.category && params.category !== "All") {

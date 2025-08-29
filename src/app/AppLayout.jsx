@@ -7,7 +7,7 @@ import HomeBar from "../components/HomeBar";
 export default function AppLayout() {
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <HomeBar appName="XXX Second Hand Market App" /> {/* 不传 actions */}
+      <HomeBar appName="LaiCai Second Hand Market" />
       <Layout.Content style={{ padding: 16 }}>
         <Outlet />
       </Layout.Content>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cleanup Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .button {
+            background-color: #ff4757;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #ff3742;
+        }
+        .button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .info {
+            background-color: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .warning {
+            background-color: #fff3e0;
+            border: 1px solid #ff9800;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .success {
+            background-color: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .code {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Data Cleanup Test</h1>
+        
+        <div class="info">
+            <h3>📋 What This Does</h3>
+            <p>This page helps you test the cleanup functionality for the Second Hand Market app. It will clear all temporary data including:</p>
+            <ul>
+                <li>User favorites, posts, transactions, and reviews</li>
+                <li>Cart items and authentication data</li>
+                <li>Session storage and cookies</li>
+            </ul>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ Important Warning</h3>
+            <p><strong>This action will permanently delete all your temporary data!</strong> Make sure you want to clear everything before proceeding.</p>
+        </div>
+
+        <div style="text-align: center;">
+            <button class="button" onclick="testCleanup()" id="cleanupBtn">
+                🧹 Run Complete Cleanup
+            </button>
+        </div>
+
+        <div id="result" style="margin-top: 20px;"></div>
+
+        <div class="info">
+            <h3>🔧 Alternative Methods</h3>
+            <p>You can also run cleanup directly in the app:</p>
+            <div class="code">
+                // In browser console (F12 → Console tab):<br>
+                window.cleanupApp()<br><br>
+                // Or:<br>
+                window.runCleanup()
+            </div>
+        </div>
+
+        <div class="success">
+            <h3>✅ After Cleanup</h3>
+            <p>After running the cleanup, you can log in with these default test accounts:</p>
+            <ul>
+                <li><strong>Email:</strong> test@example.com, <strong>Password:</strong> password123</li>
+                <li><strong>Email:</strong> demo@example.com, <strong>Password:</strong> demo123</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function testCleanup() {
+            const button = document.getElementById('cleanupBtn');
+            const result = document.getElementById('result');
+            
+            button.disabled = true;
+            button.textContent = '🔄 Running Cleanup...';
+            
+            // Simulate cleanup process
+            setTimeout(() => {
+                try {
+                    // Clear localStorage
+                    const keysToClear = [
+                        'user_favorites',
+                        'user_posts', 
+                        'user_transactions',
+                        'user_reviews',
+                        'cart_items',
+                        'token',
+                        'user'
+                    ];
+
+                    keysToClear.forEach(key => {
+                        localStorage.removeItem(key);
+                    });
+
+                    // Clear session storage
+                    sessionStorage.clear();
+
+                    // Clear cookies
+                    document.cookie.split(";").forEach(function(c) { 
+                        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                    });
+
+                    result.innerHTML = `
+                        <div class="success">
+                            <h3>🎉 Cleanup Completed Successfully!</h3>
+                            <p>All temporary data has been cleared from your browser.</p>
+                            <ul>
+                                <li>✅ User data cleared</li>
+                                <li>✅ Cart items cleared</li>
+                                <li>✅ Authentication data cleared</li>
+                                <li>✅ Session storage cleared</li>
+                                <li>✅ Cookies cleared</li>
+                            </ul>
+                            <p><strong>You can now return to the app and start fresh!</strong></p>
+                        </div>
+                    `;
+                } catch (error) {
+                    result.innerHTML = `
+                        <div class="warning">
+                            <h3>❌ Error During Cleanup</h3>
+                            <p>An error occurred: ${error.message}</p>
+                            <p>Try running the cleanup directly in the app console instead.</p>
+                        </div>
+                    `;
+                } finally {
+                    button.disabled = false;
+                    button.textContent = '🧹 Run Complete Cleanup';
+                }
+            }, 2000);
+        }
+
+        // Check if we're in the app context
+        if (typeof window.cleanupApp === 'function') {
+            document.getElementById('result').innerHTML = `
+                <div class="success">
+                    <h3>✅ App Context Detected</h3>
+                    <p>The cleanup functions are available in this browser context.</p>
+                    <p>You can also use <code>window.cleanupApp()</code> in the console.</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
+

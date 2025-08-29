@@ -113,6 +113,27 @@ export default function ItemCard({ item }) {
             {item.location || "Unknown"}
           </span>
         </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            marginBottom: "10px",
+          }}
+        >
+          <span
+            style={{
+              padding: "4px 8px",
+              backgroundColor: item.stockQuantity > 0 ? "#e8f5e8" : "#ffeaea",
+              color: item.stockQuantity > 0 ? "#27ae60" : "#e74c3c",
+              borderRadius: "4px",
+              fontSize: "11px",
+              fontWeight: "bold",
+            }}
+          >
+            {item.stockQuantity > 0 ? `${item.stockQuantity} in stock` : "Out of stock"}
+          </span>
+        </div>
         <Link
           to={`/items/${item.id}`}
           style={{
